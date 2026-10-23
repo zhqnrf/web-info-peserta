@@ -1,0 +1,10 @@
+# Data asli & upload (dibuat otomatis di server)
+data/*.json
+data/*.txt
+uploads/*
+!uploads/.htaccess
+!uploads/index.html
+
+# File pribadi / lama
+BALASAN-BID.txt
+demo/
