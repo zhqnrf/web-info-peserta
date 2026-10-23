@@ -6,5 +6,5 @@ uploads/*
 !uploads/index.html
 
 # File pribadi / lama
-BALASAN-BID.txt
-demo/
+/BALASAN-BID.txt
+/demo/
