@@ -1,4 +1,5 @@
 # Data asli & upload (dibuat otomatis di server)
+data/*.php
 data/*.json
 data/*.txt
 uploads/*

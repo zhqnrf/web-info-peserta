@@ -22,23 +22,33 @@ function parse_jadwal($text) {
 }
 
 // ---------- Penyimpanan JSON (tanpa database) ----------
+// Disimpan sebagai .php yang diawali baris "exit", jadi kalau dibuka lewat browser
+// isinya tidak pernah tampil, walau server tidak membaca .htaccess (mis. Nginx).
+const DATA_GUARD = "<?php http_response_code(404); exit; ?>\n";
+
 function data_get($name, $default = []) {
-    $f = DATA_DIR . "/$name.json";
+    $f = DATA_DIR . "/$name.php";
     if (!is_file($f)) return $default;
-    $d = json_decode(file_get_contents($f), true);
+    $raw = file_get_contents($f);
+    if (strpos($raw, DATA_GUARD) === 0) $raw = substr($raw, strlen(DATA_GUARD));
+    $d = json_decode($raw, true);
     return is_array($d) ? $d : $default;
 }
 
 function data_put($name, $value) {
     if (!is_dir(DATA_DIR)) mkdir(DATA_DIR, 0755, true);
-    file_put_contents(DATA_DIR . "/$name.json", json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), LOCK_EX);
+    $json = json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if (file_put_contents(DATA_DIR . "/$name.php", DATA_GUARD . $json, LOCK_EX) === false) {
+        http_response_code(500);
+        exit('Folder data/ tidak bisa ditulis. Ubah pemilik/permission folder data/ dan uploads/ agar bisa ditulis PHP.');
+    }
 }
 
 function seed_data($force = false) {
     $marker = DATA_DIR . '/seeded_at.txt';
     // Server demo publik: kembalikan data contoh otomatis setiap N jam
     if (DEMO_MODE && DEMO_AUTO_RESET_HOURS > 0 && is_file($marker) && time() - filemtime($marker) > DEMO_AUTO_RESET_HOURS * 3600) $force = true;
-    if (!$force && is_file(DATA_DIR . '/settings.json')) return;
+    if (!$force && is_file(DATA_DIR . '/settings.php')) return;
 
     data_put('settings', default_settings());
     data_put('konten', default_konten());
@@ -48,7 +58,7 @@ function seed_data($force = false) {
         foreach (glob(UPLOAD_DIR . '/*') ?: [] as $f) {
             if (preg_match('/\.(jpe?g|png|webp|gif)$/i', $f)) unlink($f);
         }
-        @unlink(DATA_DIR . '/auth.json');
+        @unlink(DATA_DIR . '/auth.php');
     }
     file_put_contents($marker, date('c'));
     unset($GLOBALS['_S'], $GLOBALS['_K']);

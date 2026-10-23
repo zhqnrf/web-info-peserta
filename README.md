@@ -29,7 +29,7 @@ Alur peserta: buka link → registrasi (nama, departemen, No. HP + field tambaha
 Syarat: PHP 7.4 atau lebih baru (shared hosting / cPanel biasa sudah cukup).
 
 1. Upload semua file ke folder website (misalnya `public_html/` atau subfolder).
-2. Pastikan folder `data/` dan `uploads/` bisa ditulis oleh PHP (permission 755 atau 775).
+2. Pastikan folder `data/` dan `uploads/` bisa ditulis oleh PHP. Di aaPanel/VPS: `chown -R www:www data uploads` (user PHP di aaPanel adalah `www`).
 3. Buka `config.php` dan atur:
    - `DEMO_MODE` → `true` untuk server demo, `false` untuk acara sungguhan.
    - `DEFAULT_ADMIN_PASSWORD` → password admin awal.
@@ -65,16 +65,18 @@ defaults.php     Isi awal / contoh
 lib.php          Fungsi bersama (penyimpanan, login, upload, dll.)
 icons.php        Ikon SVG
 assets/          CSS & gambar contoh
-data/            Data JSON (dibuat otomatis, dilindungi .htaccess)
+data/            Data JSON dalam file .php (dibuat otomatis, tidak bisa dibuka lewat browser)
 uploads/         Foto & logo yang diupload
 ```
 
 ## Keamanan
 
-- Folder `data/` diblokir dari akses langsung lewat `.htaccess` (Apache/LiteSpeed). Di **Nginx**, tambahkan:
+- Data disimpan di `data/*.php` yang diawali `exit`, jadi isinya tidak bisa dibaca lewat browser di server apa pun, termasuk Nginx yang tidak membaca `.htaccess`.
+- Tambahan pengamanan untuk **Nginx** (misalnya aaPanel): tambahkan di konfigurasi situs (sesuaikan `/web-info-peserta/` dengan folder Anda):
   ```nginx
-  location ~ ^/(data|admin)/ { deny all; }
-  location ~ ^/uploads/.*\.php$ { deny all; }
+  location ^~ /web-info-peserta/data/  { deny all; }
+  location ^~ /web-info-peserta/admin/ { deny all; }
+  location ^~ /web-info-peserta/uploads/ { location ~ \.php$ { deny all; } }
   ```
 - Upload hanya menerima gambar asli (JPG/PNG/WEBP/GIF, maks 3 MB) dan file diberi nama acak.
 - Semua aksi admin dilindungi token CSRF. Password admin disimpan dalam bentuk hash.
